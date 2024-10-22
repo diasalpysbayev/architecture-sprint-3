@@ -1,39 +1,46 @@
+
 @startuml
+left to right direction
+
+actor User as "Пользователь"
+
+package "API Gateway" {
+  rectangle "API Gateway" as API_Gateway
+}
 
 package "Микросервисы" {
-  component TemperatureMonitoringService
-  component TemperatureRegulationService
-  component DeviceManagementService
-  component NotificationService
+  component TemperatureMonitoringService as TMS
+  component TemperatureRegulationService as TRS
+  component DeviceManagementService as DMS
+  component NotificationService as NS
 }
 
 package "Базы данных" {
-  database TempMonitoringDB
-  database TempRegulationDB
-  database DeviceManagementDB
-  database NotificationDB
+  database TempMonitoringDB as TMDB
+  database TempRegulationDB as TRDB
+  database DeviceManagementDB as DMDB
+  database NotificationDB as NDB
 }
 
-package "Шина" {
-  queue Kafka as "Топик"
-}
+queue Kafka as "Кафка"
 
-API_Gateway -> TemperatureMonitoringService : "Запрос текущей температуры"
-TemperatureMonitoringService -> TempMonitoringDB : "Чтение температуры"
-TemperatureMonitoringService -> Kafka : "Публикация данных о температуре"
+User --> API_Gateway : "HTTP Запросы"
+API_Gateway --> TMS : "Запрос текущей температуры"
+TMS --> TMDB : "Чтение температуры"
+TMS --> "Кафка" : "Публикация данных о температуре"
 
-API_Gateway -> TemperatureRegulationService : "Команды регулирования температуры"
-TemperatureRegulationService -> TempRegulationDB : "Запись настроек"
-TemperatureRegulationService -> DeviceManagementService : "Команды управления устройствами"
+API_Gateway --> TRS : "Команды регулирования температуры"
+TRS --> TRDB : "Запись настроек"
+TRS --> DMS : "Команды управления устройствами"
 
-API_Gateway -> DeviceManagementService : "Управление устройствами (включение/выключение)"
-DeviceManagementService -> DeviceManagementDB : "Запись состояния устройства"
-DeviceManagementService -> Kafka : "Публикация изменений состояния"
+API_Gateway --> DMS : "Управление устройствами (вкл/выкл)"
+DMS --> DMDB : "Запись состояния устройства"
+DMS --> "Кафка" : "Публикация изменений состояния"
 
-TemperatureRegulationService -> Kafka : "Публикация команд"
+TRS --> "Кафка" : "Публикация команд регулирования"
 
-Kafka -> NotificationService : "События для уведомлений"
-NotificationService -> NotificationDB : "Логи уведомлений"
-NotificationService -> User : "Отправка уведомлений"
+"Кафка" --> NS : "События для уведомлений"
+NS --> NDB : "Запись уведомлений"
+NS --> User : "Отправка уведомлений"
 
 @enduml
